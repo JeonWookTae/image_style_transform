@@ -35,14 +35,8 @@ style_net = VGG.feed_forward(style_img, scope='style')
 initial_net = VGG.feed_forward(initial_img, scope='initial')
 
 # each layer define
-content_layers = ['conv4_2']
-style_layers = ['relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1']
-
-# content_loss_define
-content_losses = []
-for layer in content_layers:
-    content_losses.append(tf.nn.l2_loss(content_net[layer] - initial_net[layer]) / 2.)
-content_loss = reduce(tf.add, content_losses * 75)
+# content_layers = ['conv4_2']
+# style_layers = ['relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1']
 
 
 # style_loss_define
@@ -58,14 +52,27 @@ def gram_func(tensor):
     return gram_matrix * size
 
 
-style_losses = []
-for layer in style_layers:
-    gram_loss = tf.nn.l2_loss(gram_func(initial_net[layer]) - gram_func(style_net[layer]))
-    style_losses.append(gram_loss * 0.2)
-style_loss = reduce(tf.add, style_losses * 100)
+# style loss define
+def style_loss(init_net, style_net):
+    style_layers = ['relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1']
+    style_losses = []
+    for layer in style_layers:
+        gram_loss = tf.nn.l2_loss(gram_func(init_net[layer]) - gram_func(style_net[layer]))
+        style_losses.append(gram_loss * 0.2)
+    return reduce(tf.add, style_losses * 100)
+
+
+# content_loss_define
+def content_loss(init_net, content_net):
+    content_layers = ['conv4_2']
+    content_losses = []
+    for layer in content_layers:
+        content_losses.append(tf.nn.l2_loss(content_net[layer] - init_net[layer]) / 2.)
+    return reduce(tf.add, content_losses * 75)
+
 
 # total_loss
-total_loss = content_loss + style_loss
+total_loss = content_loss(initial_net, content_net) + style_loss(initial_net, style_net)
 total_optimizer = tf.train.AdamOptimizer(learning_rate=30).minimize(total_loss)
 
 # session open & initialize
